@@ -1,0 +1,15 @@
+$:
+  vscode:
+    - runner:
+        cpus: 16
+      docker:
+        image:
+          name: docker.cnb.cool/xuanzhi33/dev-env:latest
+      services:
+        - docker
+        - name: vscode
+          options:
+            keepAliveTimeout: 24h
+      stages:
+        - name: ls
+          script: ls
