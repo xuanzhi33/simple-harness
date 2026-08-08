@@ -72,6 +72,8 @@ description: Create a pull request with git, including branch, commit, and push 
 AGENTS.md   # 项目约定:构建命令、代码风格、注意事项
 ```
 
+本项目根目录自带一份用于开发的 `AGENTS.md`(构建/极简/文档规则)。
+
 启动时终端会显示加载状态:
 
 ```
