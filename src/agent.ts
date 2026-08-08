@@ -79,7 +79,7 @@ export class Agent {
           const failed = result.code !== 0;
           const color = failed ? red : green;
           const tag = failed ? tagRed : tagGreen;
-          console.error(`${tag(" BASH ")} ${color(display)}`);
+          console.error(`${tag(" 💻 ")} ${color(display)}`);
           // 输出摘要: 无标签,灰色(与思考一致),行数提示斜体灰
           const lines = result.output.split("\n");
           const shown = lines.slice(0, 8).join("\n");
@@ -154,7 +154,7 @@ async function readStream(
 
   const emitReasoning = (t: string) => {
     if (!reasoningStarted) {
-      onStream?.("reasoning", `\n${tagSkyBlue(" REASONING ")} `);
+      onStream?.("reasoning", `\n${tagSkyBlue(" 🤔 ")} `);
       reasoningStarted = true;
     }
     onStream?.("reasoning", gray(t));
