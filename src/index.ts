@@ -7,7 +7,7 @@ import { Agent } from "./agent.ts";
 import { buildSystemPrompt } from "./system.ts";
 import { formatSkillsForPrompt, loadSkills } from "./skills.ts";
 import { formatAgentsMdPrompt, loadAgentsMd } from "./context.ts";
-import { gray, green, red, tagRed } from "./color.ts";
+import { gray, green, red, tagRed, tagSkyBlue } from "./color.ts";
 import type { Tool } from "./types.ts";
 
 const bashToolDef: Tool = {
@@ -36,10 +36,8 @@ async function main(): Promise<void> {
   // 加载 skills 与 AGENTS.md,拼入 system prompt
   const skills = loadSkills(join(cwd, ".agents", "skills"));
   const agentsCtx = loadAgentsMd(cwd);
-  console.log(`${gray("skills:")} ${green(`${skills.length} loaded`)}`);
-  console.log(
-    `${gray("AGENTS.md:")} ${agentsCtx ? green("loaded") + gray(` (${agentsCtx.path})`) : red("not found")}`,
-  );
+  console.log(`${tagSkyBlue(" 📦 ")} ${skills.length > 0 ? green(`${skills.length} loaded`) : red("0 loaded")}`);
+  if (agentsCtx) console.log(`${tagSkyBlue(" 📄 ")} ${gray(agentsCtx.path)}`);
   const systemPrompt =
     buildSystemPrompt(cwd, config.model) + formatSkillsForPrompt(skills) + formatAgentsMdPrompt(agentsCtx);
 
