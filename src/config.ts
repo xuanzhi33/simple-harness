@@ -10,7 +10,7 @@ export interface Config {
 }
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-const DEFAULT_MODEL = "deepseek/deepseek-chat";
+const DEFAULT_MODEL = "deepseek/deepseek-v4-flash-0731";
 const DEFAULT_MAX_ITERATIONS = 20;
 
 // 启动时读 .env(若存在): KEY=VALUE,忽略空行/`#` 注释;process.env 已有值优先(不覆盖)
