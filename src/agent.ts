@@ -3,6 +3,7 @@ import type { ChatMessage, Tool, ToolCall, ToolResult } from "./types.ts";
 import { gray, green, italicGray, red, tagGreen, tagRed, tagSkyBlue } from "./color.ts";
 
 const FETCH_TIMEOUT_MS = 60_000;
+const MAX_ITERATIONS = 20; // 写死: 单轮对话的工具调用上限
 
 export interface AgentOptions {
   config: Config;
@@ -45,7 +46,7 @@ export class Agent {
   async chat(userText: string): Promise<string> {
     this.messages.push({ role: "user", content: userText });
 
-    for (let i = 0; i < this.config.maxIterations; i++) {
+    for (let i = 0; i < MAX_ITERATIONS; i++) {
       const { content, reasoning, toolCalls } = await this.streamComplete();
 
       // 无工具调用时不设置 tool_calls 字段: DeepSeek 后端拒绝空数组
@@ -89,7 +90,7 @@ export class Agent {
         }),
       );
     }
-    return `Reached max iterations (${this.config.maxIterations}) without a final answer.`;
+    return `Reached max iterations (${MAX_ITERATIONS}) without a final answer.`;
   }
 
   // 流式请求 + SSE 解析,累积出完整 message(与旧非流式响应结构一致)
@@ -105,7 +106,6 @@ export class Agent {
       tool_choice: "auto",
       stream: true,
     };
-    if (this.config.reasoningEffort) body.reasoning = { effort: this.config.reasoningEffort };
 
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS);
