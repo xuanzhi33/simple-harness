@@ -4,7 +4,7 @@ simple-harness:极简 TypeScript coding agent(单 bash 工具,OpenRouter,零 npm
 
 ## 开发命令
 
-- `pnpm dev` — 运行(REPL / 单次模式)
+- `pnpm dev` — 运行(REPL / 单次模式)。**禁止直接运行**:它会用真实 OpenRouter API 测试并消耗额度
 - `pnpm typecheck` — 类型检查(修改只需通过它,无需运行测试)
 
 ## 规则
