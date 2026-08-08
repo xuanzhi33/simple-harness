@@ -140,6 +140,7 @@ async function readStream(
   const decoder = new TextDecoder();
   let buffer = "";
   let content = "";
+  let contentStarted = false;
   let reasoning: string | undefined;
   let reasoningStarted = false;
   let reasoningEnded = false;
@@ -188,6 +189,11 @@ async function readStream(
         const c = delta.content as string | undefined;
         if (c) {
           endReasoning();
+          if (!contentStarted && !reasoningStarted) {
+            // 无 reasoning 时,首个 content 前补换行(有 reasoning 则前缀已含)
+            onStream?.("content", "\n");
+          }
+          contentStarted = true;
           content += c;
           onStream?.("content", c);
         }

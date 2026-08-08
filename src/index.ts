@@ -44,7 +44,6 @@ async function main(): Promise<void> {
   // 单次模式: 传入 prompt 则跑完退出
   const promptArg = process.argv[2];
   if (promptArg) {
-    process.stdout.write("\n");
     await agent.chat(promptArg);
     process.stdout.write("\n");
     return;
@@ -67,6 +66,7 @@ async function main(): Promise<void> {
       console.log("[history cleared]");
       continue;
     }
+    process.stdout.write("\n");
     process.stdout.write("\n");
     try {
       await agent.chat(input);
