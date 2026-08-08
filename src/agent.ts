@@ -37,11 +37,10 @@ export class Agent {
       // DeepSeek 规范——携带 tools 参数的请求需完整回传 reasoning_content,
       // 否则后续请求 400(OpenRouter 网关的 reasoning 字段是它的别名)
       const reasoning = msg.reasoning ?? msg.reasoning_content;
-      const assistantMsg: ChatMessage = {
-        role: "assistant",
-        content: msg.content ?? null,
-        tool_calls: toolCalls,
-      };
+      // 无工具调用时不设置 tool_calls 字段: DeepSeek 后端拒绝空数组
+      // ("Expected an array with minimum length 1")
+      const assistantMsg: ChatMessage = { role: "assistant", content: msg.content ?? null };
+      if (toolCalls.length > 0) assistantMsg.tool_calls = toolCalls;
       if (reasoning) {
         assistantMsg.reasoning_content = reasoning;
         const clipped = reasoning.length > 2000 ? reasoning.slice(0, 2000) + "..." : reasoning;
