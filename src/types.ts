@@ -14,11 +14,16 @@ export interface ToolCall {
   function: { name: string; arguments: string }; // arguments 为 JSON 字符串
 }
 
+export interface ToolResult {
+  output: string;
+  code: number; // 退出码,非 0 视为失败
+}
+
 export interface Tool {
   name: string;
   description: string;
   parameters: Record<string, unknown>; // JSON Schema,手写
-  execute(args: Record<string, unknown>): Promise<string>;
+  execute(args: Record<string, unknown>): Promise<ToolResult>;
 }
 
 // API 响应(仅用到字段)

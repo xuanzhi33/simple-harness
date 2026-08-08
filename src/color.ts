@@ -5,8 +5,11 @@ function wrap(open: string) {
   return (s: string) => (useColor ? `\x1b[${open}m${s}\x1b[0m` : s);
 }
 
-export const dim = wrap("2");
-export const red = wrap("31");
-export const green = wrap("32");
-export const yellow = wrap("33");
-export const cyan = wrap("36");
+export const gray = wrap("90"); // 思考内容
+export const green = wrap("32"); // bash 成功
+export const red = wrap("31"); // bash 失败 / 错误
+
+// 标签: 背景色 + 黑/白字,用法: tagYellow(" REASONING ")
+export const tagYellow = wrap("43;30");
+export const tagCyan = wrap("46;30");
+export const tagRed = wrap("41;37");

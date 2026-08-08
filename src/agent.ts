@@ -1,6 +1,6 @@
 import type { Config } from "./config.ts";
-import type { ChatMessage, Tool, ToolCall } from "./types.ts";
-import { cyan, dim, red, yellow } from "./color.ts";
+import type { ChatMessage, Tool, ToolCall, ToolResult } from "./types.ts";
+import { gray, green, red, tagCyan, tagYellow } from "./color.ts";
 
 const FETCH_TIMEOUT_MS = 60_000;
 
@@ -62,25 +62,29 @@ export class Agent {
 
       await Promise.all(
         toolCalls.map(async (tc) => {
-          let result: string;
+          let result: ToolResult;
+          let display = tc.function.arguments; // 解析失败时的回退
           try {
             const args = JSON.parse(tc.function.arguments ?? "{}") as Record<string, unknown>;
+            if (typeof args.command === "string") display = args.command;
+            else display = JSON.stringify(args);
             const tool = this.tools.find((t) => t.name === tc.function.name);
-            // 输入日志: 只显示 command 字段(其他工具/字段按 JSON 显示),不限长度
-            const display =
-              typeof args.command === "string" ? args.command : JSON.stringify(args);
-            console.error(`${cyan("[bash]")} ${display}`);
-            result = tool ? await tool.execute(args) : `Unknown tool: ${tc.function.name}`;
-            // 输出摘要(前 8 行,完整结果仍进消息历史)
-            const lines = result.split("\n");
-            const shown = lines.slice(0, 8).join("\n");
-            const more = lines.length > 8 ? `\n  …(${lines.length} lines)` : "";
-            console.error(`${cyan("[bash →]")} ${dim(shown)}${more}`);
+            result = tool
+              ? await tool.execute(args)
+              : { output: `Unknown tool: ${tc.function.name}`, code: 1 };
           } catch (e) {
-            result = `Error: ${(e as Error).message}`;
-            console.error(`${red("[bash ✗]")} ${(e as Error).message}`);
+            result = { output: `Error: ${(e as Error).message}`, code: 1 };
           }
-          this.messages.push({ role: "tool", tool_call_id: tc.id, content: result });
+          // 命令按成败染绿/红(执行后打印,故可知退出码)
+          const failed = result.code !== 0;
+          const color = failed ? red : green;
+          console.error(`${tagCyan(" BASH ")} ${color(display)}`);
+          // 输出摘要(前 8 行,完整结果仍进消息历史)
+          const lines = result.output.split("\n");
+          const shown = lines.slice(0, 8).join("\n");
+          const more = lines.length > 8 ? `\n  …(${lines.length} lines)` : "";
+          console.error(`${tagCyan(" BASH → ")} ${color(shown)}${more}`);
+          this.messages.push({ role: "tool", tool_call_id: tc.id, content: result.output });
         }),
       );
     }
@@ -149,10 +153,10 @@ async function readStream(
 
   const emitReasoning = (t: string) => {
     if (!reasoningStarted) {
-      onStream?.("reasoning", `\n${yellow("[reasoning]")} `);
+      onStream?.("reasoning", `\n${tagYellow(" REASONING ")} `);
       reasoningStarted = true;
     }
-    onStream?.("reasoning", t);
+    onStream?.("reasoning", gray(t));
   };
   // reasoning 结束后立即换行(content/tool_calls 出现时触发,流结束兕底)
   const endReasoning = () => {

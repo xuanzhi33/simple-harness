@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { ToolResult } from "./types.ts";
 
 export interface BashArgs {
   command: string;
@@ -59,7 +60,7 @@ function runBash(command: string, timeoutMs?: number): Promise<RunResult> {
   });
 }
 
-export async function bashTool(args: BashArgs): Promise<string> {
+export async function bashTool(args: BashArgs): Promise<ToolResult> {
   const timeoutMs = args.timeout && args.timeout > 0 ? args.timeout * 1000 : undefined;
   const { stdout, stderr, code, timedOut } = await runBash(args.command, timeoutMs);
 
@@ -75,7 +76,7 @@ export async function bashTool(args: BashArgs): Promise<string> {
   if (timedOut) notes.push(`Command timed out after ${args.timeout}s`);
   else if (code !== 0) notes.push(`Command exited with code ${code}`);
 
-  let result = text;
-  if (notes.length > 0) result += (result ? "\n" : "") + notes.map((n) => `[${n}]`).join(" ");
-  return result || "(no output)";
+  let output = text;
+  if (notes.length > 0) output += (output ? "\n" : "") + notes.map((n) => `[${n}]`).join(" ");
+  return { output: output || "(no output)", code: timedOut ? 1 : code };
 }
