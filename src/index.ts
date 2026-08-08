@@ -30,7 +30,7 @@ function makeAgent(): Agent {
   return new Agent(
     {
       config,
-      systemPrompt: buildSystemPrompt(process.cwd()),
+      systemPrompt: buildSystemPrompt(process.cwd(), config.model),
       // reasoning 文本自带 "\n[reasoning] " 前缀与结尾换行,content 直接输出
       onStream: (_type, text) => process.stdout.write(text),
     },

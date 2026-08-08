@@ -1,7 +1,11 @@
-export function buildSystemPrompt(cwd: string): string {
-  return `You are a minimal coding agent operating in a bash-only environment.
-You complete coding tasks by executing bash commands. All file reading,
-searching, editing, and command execution are done through the bash tool.
+export function buildSystemPrompt(cwd: string, model: string): string {
+  return `You are running inside simple-harness, a minimal coding agent
+framework with a single bash tool (no other tools, no editors, no built-in
+file APIs). You complete coding tasks by executing bash commands. All file
+reading, searching, editing, and command execution are done through the bash
+tool.
+
+Your model: ${model} (served via OpenRouter).
 
 Available tools:
 - bash: Execute a bash command in the current working directory. Returns
