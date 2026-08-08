@@ -24,15 +24,29 @@ const bashToolDef: Tool = {
   execute: (args) => bashTool(args as unknown as BashArgs),
 };
 
+function makeAgent(): Agent {
+  const config = resolveConfig();
+  return new Agent(
+    {
+      config,
+      systemPrompt: buildSystemPrompt(process.cwd()),
+      // reasoning 文本自带 "\n[reasoning] " 前缀与结尾换行,content 直接输出
+      onStream: (_type, text) => process.stdout.write(text),
+    },
+    [bashToolDef],
+  );
+}
+
 async function main(): Promise<void> {
   loadDotEnv();
-  const config = resolveConfig();
-  const agent = new Agent({ config, systemPrompt: buildSystemPrompt(process.cwd()) }, [bashToolDef]);
+  const agent = makeAgent();
 
   // 单次模式: 传入 prompt 则跑完退出
   const promptArg = process.argv[2];
   if (promptArg) {
-    console.log(await agent.chat(promptArg));
+    process.stdout.write("\n");
+    await agent.chat(promptArg);
+    process.stdout.write("\n");
     return;
   }
 
@@ -53,13 +67,13 @@ async function main(): Promise<void> {
       console.log("[history cleared]");
       continue;
     }
-    console.log("\n─── 最终答复 ───");
+    process.stdout.write("\n");
     try {
-      console.log(await agent.chat(input));
+      await agent.chat(input);
     } catch (e) {
       console.error(`[error] ${(e as Error).message}`);
     }
-    console.log("─────────────────");
+    process.stdout.write("\n");
   }
   rl.close();
 }
