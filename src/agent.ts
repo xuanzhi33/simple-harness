@@ -142,6 +142,7 @@ async function readStream(
   let content = "";
   let reasoning: string | undefined;
   let reasoningStarted = false;
+  let reasoningEnded = false;
   const toolAcc = new Map<number, ToolCallAcc>();
 
   const emitReasoning = (t: string) => {
@@ -150,6 +151,13 @@ async function readStream(
       reasoningStarted = true;
     }
     onStream?.("reasoning", t);
+  };
+  // reasoning 结束后立即换行(content/tool_calls 出现时触发,流结束兕底)
+  const endReasoning = () => {
+    if (reasoningStarted && !reasoningEnded) {
+      onStream?.("reasoning", "\n");
+      reasoningEnded = true;
+    }
   };
 
   try {
@@ -179,10 +187,12 @@ async function readStream(
         }
         const c = delta.content as string | undefined;
         if (c) {
+          endReasoning();
           content += c;
           onStream?.("content", c);
         }
         if (Array.isArray(delta.tool_calls)) {
+          endReasoning();
           for (const tc of delta.tool_calls as {
             index?: number;
             id?: string;
@@ -199,7 +209,7 @@ async function readStream(
       }
     }
   } finally {
-    if (reasoningStarted) onStream?.("reasoning", "\n");
+    endReasoning();
   }
 
   const toolCalls: ToolCall[] = [...toolAcc.entries()]
