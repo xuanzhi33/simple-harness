@@ -9,6 +9,8 @@
 - bash 输出自动截断(2000 行 / 50KB)至临时文件,支持 timeout
 - 终端着色:命令成败绿/红,思考灰字,🤔 / 💻 标签
 - Skills 支持:自动加载 `.agents/skills` 注入 system prompt
+- AGENTS.md 支持:项目根指令文件常驻注入
+- 启动时显示加载的 skills 数量与 AGENTS.md 状态
 
 ## 环境要求
 
@@ -62,6 +64,21 @@ description: Create a pull request with git, including branch, commit, and push 
 
 规则:目录含 `SKILL.md` 即技能根(不再递归);`description` 必填(缺失则忽略);`name` 缺省用目录名。加载后模型按需用 `cat` 读取技能文件执行。
 
+## AGENTS.md
+
+项目根目录的 `AGENTS.md` 作为**项目级指令**常驻注入 system prompt(每轮对话生效,约束所有行为),区别于按需读取的 skills:
+
+```
+AGENTS.md   # 项目约定:构建命令、代码风格、注意事项
+```
+
+启动时终端会显示加载状态:
+
+```
+skills: 2 loaded
+AGENTS.md: loaded (/path/to/AGENTS.md)   # 或 not found
+```
+
 ## 工作原理
 
 1. 以完整历史调用 OpenRouter `/chat/completions`(stream)
@@ -77,10 +94,11 @@ src/
 ├── index.ts    # 入口:加载 .env → REPL 或单次模式
 ├── bash.ts     # bash 工具:执行 + 截断 + timeout
 ├── skills.ts   # .agents/skills 扫描 + frontmatter + 注入
+├── context.ts  # AGENTS.md 加载 + 注入
 ├── config.ts   # .env 解析 + OpenRouter 配置
 ├── types.ts    # OpenAI Chat Completions 格式类型
 ├── system.ts   # system prompt 构建
 └── color.ts    # 终端 ANSI 着色(零依赖)
 ```
 
-共约 630 行 TypeScript。
+共约 670 行 TypeScript。

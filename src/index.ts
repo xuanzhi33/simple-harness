@@ -6,7 +6,8 @@ import { bashTool, type BashArgs } from "./bash.ts";
 import { Agent } from "./agent.ts";
 import { buildSystemPrompt } from "./system.ts";
 import { formatSkillsForPrompt, loadSkills } from "./skills.ts";
-import { gray, green, tagRed } from "./color.ts";
+import { formatAgentsMdPrompt, loadAgentsMd } from "./context.ts";
+import { gray, green, red, tagRed } from "./color.ts";
 import type { Tool } from "./types.ts";
 
 const bashToolDef: Tool = {
@@ -27,22 +28,30 @@ const bashToolDef: Tool = {
   execute: (args) => bashTool(args as unknown as BashArgs),
 };
 
-function makeAgent(): Agent {
+async function main(): Promise<void> {
+  loadDotEnv();
   const config = resolveConfig();
-  return new Agent(
+  const cwd = process.cwd();
+
+  // 加载 skills 与 AGENTS.md,拼入 system prompt
+  const skills = loadSkills(join(cwd, ".agents", "skills"));
+  const agentsCtx = loadAgentsMd(cwd);
+  console.log(`${gray("skills:")} ${green(`${skills.length} loaded`)}`);
+  console.log(
+    `${gray("AGENTS.md:")} ${agentsCtx ? green("loaded") + gray(` (${agentsCtx.path})`) : red("not found")}`,
+  );
+  const systemPrompt =
+    buildSystemPrompt(cwd, config.model) + formatSkillsForPrompt(skills) + formatAgentsMdPrompt(agentsCtx);
+
+  const agent = new Agent(
     {
       config,
-      systemPrompt: buildSystemPrompt(process.cwd(), config.model) + formatSkillsForPrompt(loadSkills(join(process.cwd(), ".agents", "skills"))),
+      systemPrompt,
       // reasoning 文本自带 "\n[reasoning] " 前缀与结尾换行,content 直接输出
       onStream: (_type, text) => process.stdout.write(text),
     },
     [bashToolDef],
   );
-}
-
-async function main(): Promise<void> {
-  loadDotEnv();
-  const agent = makeAgent();
 
   // 单次模式: 传入 prompt 则跑完退出
   const promptArg = process.argv[2];
