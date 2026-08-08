@@ -1,6 +1,6 @@
 import type { Config } from "./config.ts";
 import type { ChatMessage, Tool, ToolCall, ToolResult } from "./types.ts";
-import { gray, green, red, tagCyan, tagYellow } from "./color.ts";
+import { green, red, skyBlue, tagCyan, tagYellow } from "./color.ts";
 
 const FETCH_TIMEOUT_MS = 60_000;
 
@@ -156,7 +156,7 @@ async function readStream(
       onStream?.("reasoning", `\n${tagYellow(" REASONING ")} `);
       reasoningStarted = true;
     }
-    onStream?.("reasoning", gray(t));
+    onStream?.("reasoning", skyBlue(t));
   };
   // reasoning 结束后立即换行(content/tool_calls 出现时触发,流结束兕底)
   const endReasoning = () => {

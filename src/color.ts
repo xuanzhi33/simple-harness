@@ -5,7 +5,9 @@ function wrap(open: string) {
   return (s: string) => (useColor ? `\x1b[${open}m${s}\x1b[0m` : s);
 }
 
-export const gray = wrap("90"); // 思考内容
+export const gray = wrap("90"); // 次要信息
+const skyBlue = wrap("94"); // 思考内容(天蓝)
+export { skyBlue };
 export const green = wrap("32"); // bash 成功
 export const red = wrap("31"); // bash 失败 / 错误
 
