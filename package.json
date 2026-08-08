@@ -1,0 +1,16 @@
+{
+  "name": "simple-harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A minimal coding agent with a single bash tool.",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "packageManager": "pnpm@11.18.0",
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.8.0"
+  }
+}
