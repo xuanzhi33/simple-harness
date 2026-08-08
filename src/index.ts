@@ -4,6 +4,7 @@ import { loadDotEnv, resolveConfig } from "./config.ts";
 import { bashTool, type BashArgs } from "./bash.ts";
 import { Agent } from "./agent.ts";
 import { buildSystemPrompt } from "./system.ts";
+import { dim, red } from "./color.ts";
 import type { Tool } from "./types.ts";
 
 const bashToolDef: Tool = {
@@ -63,15 +64,13 @@ async function main(): Promise<void> {
     if (input === "/exit" || input === "/quit") break;
     if (input === "/reset") {
       agent.messages.length = 1; // 保留 system
-      console.log("[history cleared]");
+      console.log(dim("[history cleared]"));
       continue;
     }
-    process.stdout.write("\n");
-    process.stdout.write("\n");
     try {
       await agent.chat(input);
     } catch (e) {
-      console.error(`[error] ${(e as Error).message}`);
+      console.error(`${red("[error]")} ${(e as Error).message}`);
     }
     process.stdout.write("\n");
   }
@@ -79,6 +78,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((e: unknown) => {
-  console.error(`[error] ${(e as Error).message}`);
+  console.error(`${red("[error]")} ${(e as Error).message}`);
   process.exit(1);
 });

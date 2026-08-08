@@ -1,5 +1,6 @@
 import type { Config } from "./config.ts";
 import type { ChatMessage, Tool, ToolCall } from "./types.ts";
+import { cyan, dim, red, yellow } from "./color.ts";
 
 const FETCH_TIMEOUT_MS = 60_000;
 
@@ -68,16 +69,16 @@ export class Agent {
             // 输入日志: 只显示 command 字段(其他工具/字段按 JSON 显示),不限长度
             const display =
               typeof args.command === "string" ? args.command : JSON.stringify(args);
-            console.error(`[${tc.function.name}] ${display}`);
+            console.error(`${cyan("[bash]")} ${display}`);
             result = tool ? await tool.execute(args) : `Unknown tool: ${tc.function.name}`;
             // 输出摘要(前 8 行,完整结果仍进消息历史)
             const lines = result.split("\n");
             const shown = lines.slice(0, 8).join("\n");
             const more = lines.length > 8 ? `\n  …(${lines.length} lines)` : "";
-            console.error(`[${tc.function.name} →] ${shown}${more}`);
+            console.error(`${cyan("[bash →]")} ${dim(shown)}${more}`);
           } catch (e) {
             result = `Error: ${(e as Error).message}`;
-            console.error(`[${tc.function.name} ✗] ${(e as Error).message}`);
+            console.error(`${red("[bash ✗]")} ${(e as Error).message}`);
           }
           this.messages.push({ role: "tool", tool_call_id: tc.id, content: result });
         }),
@@ -148,7 +149,7 @@ async function readStream(
 
   const emitReasoning = (t: string) => {
     if (!reasoningStarted) {
-      onStream?.("reasoning", "\n[reasoning] ");
+      onStream?.("reasoning", `\n${yellow("[reasoning]")} `);
       reasoningStarted = true;
     }
     onStream?.("reasoning", t);
