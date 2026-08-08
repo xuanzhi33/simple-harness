@@ -141,10 +141,12 @@ export class Agent {
 请求细节:
 - 超时: fetch 侧 AbortController 60s;`bash` 工具自身有独立 timeout
 - 响应流: 非流式(一次 JSON);后续如需流式,SSE 解析是独立函数,不动循环
-- **reasoning 兼容**(OpenRouter 网关语义):
+- **reasoning 兼容**(OpenRouter 网关语义 + DeepSeek 回传规范):
   - 请求侧: env `REASONING_EFFORT` 可选(low/medium/high),默认不发送;发送时 `{ reasoning: { effort } }`
   - 响应侧: `const reasoning = msg.reasoning ?? msg.reasoning_content`(后者是 OpenRouter 的别名)
-  - reasoning 内容打印到 stderr(`[reasoning]` 前缀,截断),**不进 messages 历史**(省上下文)
+  - **回传必需**: DeepSeek 规范——携带 tools 的请求必须完整回传 reasoning_content,否则 400。
+    故 reasoning 存入 assistant 消息的 `reasoning_content` 字段随历史回传
+  - 同时打印到 stderr(`[reasoning]` 前缀,截断),避免 UI 不可见
 
 ### 4.5 `system.ts` — system prompt
 

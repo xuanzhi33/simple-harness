@@ -4,6 +4,7 @@ export interface ChatMessage {
   role: "system" | "user" | "assistant" | "tool";
   content: string | null;
   tool_calls?: ToolCall[]; // 仅 assistant
+  reasoning_content?: string; // 仅 assistant: 思考内容,DeepSeek 工具调用时必须回传
   tool_call_id?: string; // 仅 tool
 }
 

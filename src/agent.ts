@@ -32,15 +32,23 @@ export class Agent {
       const msg = (await this.complete()).choices?.[0]?.message;
       if (!msg) throw new Error("Empty response from API");
 
-      // reasoning 只打印到 stderr,不进上下文
+      const toolCalls = msg.tool_calls ?? [];
+      // reasoning 打印到 stderr(截断),同时必须回传给 API:
+      // DeepSeek 规范——携带 tools 参数的请求需完整回传 reasoning_content,
+      // 否则后续请求 400(OpenRouter 网关的 reasoning 字段是它的别名)
       const reasoning = msg.reasoning ?? msg.reasoning_content;
+      const assistantMsg: ChatMessage = {
+        role: "assistant",
+        content: msg.content ?? null,
+        tool_calls: toolCalls,
+      };
       if (reasoning) {
+        assistantMsg.reasoning_content = reasoning;
         const clipped = reasoning.length > 2000 ? reasoning.slice(0, 2000) + "..." : reasoning;
         console.error(`[reasoning] ${clipped}`);
       }
 
-      const toolCalls = msg.tool_calls ?? [];
-      this.messages.push({ role: "assistant", content: msg.content ?? null, tool_calls: toolCalls });
+      this.messages.push(assistantMsg);
 
       if (toolCalls.length === 0) return msg.content ?? "";
 
