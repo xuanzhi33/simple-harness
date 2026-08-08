@@ -65,10 +65,10 @@ export class Agent {
           try {
             const args = JSON.parse(tc.function.arguments ?? "{}") as Record<string, unknown>;
             const tool = this.tools.find((t) => t.name === tc.function.name);
-            // 输入日志(stderr,与 [reasoning] 风格一致)
-            const argText = JSON.stringify(args);
-            const argClipped = argText.length > 200 ? argText.slice(0, 200) + "..." : argText;
-            console.error(`[${tc.function.name}] ${argClipped}`);
+            // 输入日志: 只显示 command 字段(其他工具/字段按 JSON 显示),不限长度
+            const display =
+              typeof args.command === "string" ? args.command : JSON.stringify(args);
+            console.error(`[${tc.function.name}] ${display}`);
             result = tool ? await tool.execute(args) : `Unknown tool: ${tc.function.name}`;
             // 输出摘要(前 8 行,完整结果仍进消息历史)
             const lines = result.split("\n");
