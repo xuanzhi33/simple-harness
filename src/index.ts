@@ -4,7 +4,7 @@ import { loadDotEnv, resolveConfig } from "./config.ts";
 import { bashTool, type BashArgs } from "./bash.ts";
 import { Agent } from "./agent.ts";
 import { buildSystemPrompt } from "./system.ts";
-import { gray, tagRed } from "./color.ts";
+import { gray, green, tagRed } from "./color.ts";
 import type { Tool } from "./types.ts";
 
 const bashToolDef: Tool = {
@@ -52,7 +52,7 @@ async function main(): Promise<void> {
 
   // 交互 REPL
   const rl = createInterface({ input: stdin, output: stdout });
-  console.log("simple-harness — /exit quit, /reset clear history");
+  console.log(`${green("simple-harness")} — /exit quit, /clear clear history`);
   for (;;) {
     let input: string;
     try {
@@ -62,7 +62,7 @@ async function main(): Promise<void> {
     }
     if (!input) continue;
     if (input === "/exit" || input === "/quit") break;
-    if (input === "/reset") {
+    if (input === "/clear") {
       agent.messages.length = 1; // 保留 system
       console.log(gray("[history cleared]"));
       continue;
