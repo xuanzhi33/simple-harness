@@ -58,9 +58,19 @@ export class Agent {
           try {
             const args = JSON.parse(tc.function.arguments ?? "{}") as Record<string, unknown>;
             const tool = this.tools.find((t) => t.name === tc.function.name);
+            // 输入日志(stderr,与 [reasoning] 风格一致)
+            const argText = JSON.stringify(args);
+            const argClipped = argText.length > 200 ? argText.slice(0, 200) + "..." : argText;
+            console.error(`[${tc.function.name}] ${argClipped}`);
             result = tool ? await tool.execute(args) : `Unknown tool: ${tc.function.name}`;
+            // 输出摘要(前 8 行,完整结果仍进消息历史)
+            const lines = result.split("\n");
+            const shown = lines.slice(0, 8).join("\n");
+            const more = lines.length > 8 ? `\n  …(${lines.length} lines)` : "";
+            console.error(`[${tc.function.name} →] ${shown}${more}`);
           } catch (e) {
             result = `Error: ${(e as Error).message}`;
+            console.error(`[${tc.function.name} ✗] ${(e as Error).message}`);
           }
           this.messages.push({ role: "tool", tool_call_id: tc.id, content: result });
         }),
