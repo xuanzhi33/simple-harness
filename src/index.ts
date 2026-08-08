@@ -1,9 +1,11 @@
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
+import { join } from "node:path";
 import { loadDotEnv, resolveConfig } from "./config.ts";
 import { bashTool, type BashArgs } from "./bash.ts";
 import { Agent } from "./agent.ts";
 import { buildSystemPrompt } from "./system.ts";
+import { formatSkillsForPrompt, loadSkills } from "./skills.ts";
 import { gray, green, tagRed } from "./color.ts";
 import type { Tool } from "./types.ts";
 
@@ -30,7 +32,7 @@ function makeAgent(): Agent {
   return new Agent(
     {
       config,
-      systemPrompt: buildSystemPrompt(process.cwd(), config.model),
+      systemPrompt: buildSystemPrompt(process.cwd(), config.model) + formatSkillsForPrompt(loadSkills(join(process.cwd(), ".agents", "skills"))),
       // reasoning 文本自带 "\n[reasoning] " 前缀与结尾换行,content 直接输出
       onStream: (_type, text) => process.stdout.write(text),
     },
