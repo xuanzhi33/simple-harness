@@ -7,6 +7,7 @@ import { Agent } from "./agent.ts";
 import { buildSystemPrompt } from "./system.ts";
 import { formatSkillsForPrompt, loadSkills } from "./skills.ts";
 import { formatAgentsMdPrompt, loadAgentsMd } from "./context.ts";
+import { clearSession, loadSession, saveSession } from "./session.ts";
 import { gray, green, red, tagRed, tagSkyBlue } from "./color.ts";
 import type { Tool } from "./types.ts";
 
@@ -41,15 +42,25 @@ async function main(): Promise<void> {
   const systemPrompt =
     buildSystemPrompt(cwd, config.model) + formatSkillsForPrompt(skills) + formatAgentsMdPrompt(agentsCtx);
 
+  // 会话持久化: <cwd>/session.jsonl,每次消息更新后保存,启动时重新加载
+  const sessionPath = join(cwd, "session.jsonl");
   const agent = new Agent(
     {
       config,
       systemPrompt,
       // reasoning 文本自带 "\n[reasoning] " 前缀与结尾换行,content 直接输出
       onStream: (_type, text) => process.stdout.write(text),
+      onPersist: (messages) => saveSession(sessionPath, messages),
     },
     [bashToolDef],
   );
+  const history = loadSession(sessionPath);
+  if (history.length > 0) {
+    for (const m of history) agent.messages.push(m); // 恢复历史(system 不持久化,无需重复)
+    console.log(`${tagSkyBlue(" \u{1F4BE} ")} ${green(`${history.length} messages`)} ${gray("restored")}`);
+  } else {
+    console.log(`${tagSkyBlue(" \u{1F4BE} ")} ${gray("session: empty")}`);
+  }
 
   // 单次模式: 传入 prompt 则跑完退出
   const promptArg = process.argv[2];
@@ -72,6 +83,7 @@ async function main(): Promise<void> {
     if (input === "/exit" || input === "/quit") break;
     if (input === "/clear") {
       agent.messages.length = 1; // 保留 system
+      clearSession(sessionPath); // 同步清空持久化,防止下次启动旧历史复活
       console.log(gray("[history cleared]"));
       continue;
     }

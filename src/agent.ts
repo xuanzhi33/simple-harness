@@ -11,6 +11,8 @@ export interface AgentOptions {
   temperature?: number; // 默认 0
   // 流式回调: reasoning 文本自带 "\n[reasoning] " 前缀与结尾换行
   onStream?: (type: "content" | "reasoning", text: string) => void;
+  // 每次消息 push 后触发,用于会话持久化(入参为当前全部消息)
+  onPersist?: (messages: ChatMessage[]) => void;
 }
 
 interface StreamResult {
@@ -32,6 +34,7 @@ export class Agent {
   private readonly tools: Tool[];
   private readonly temperature: number;
   private readonly onStream?: (type: "content" | "reasoning", text: string) => void;
+  private readonly onPersist?: (messages: ChatMessage[]) => void;
 
   constructor(options: AgentOptions, tools: Tool[]) {
     this.config = options.config;
@@ -39,12 +42,19 @@ export class Agent {
     this.tools = tools;
     this.temperature = options.temperature ?? 0;
     this.onStream = options.onStream;
+    this.onPersist = options.onPersist;
     this.messages.push({ role: "system", content: this.systemPrompt });
+  }
+
+  // 统一入口: push 消息并通知持久化
+  private push(msg: ChatMessage): void {
+    this.messages.push(msg);
+    this.onPersist?.(this.messages);
   }
 
   // 一轮完整对话(含工具循环);历史在 messages 中累积,REPL 多轮复用
   async chat(userText: string): Promise<string> {
-    this.messages.push({ role: "user", content: userText });
+    this.push({ role: "user", content: userText });
 
     for (let i = 0; i < MAX_ITERATIONS; i++) {
       const { content, reasoning, toolCalls } = await this.streamComplete();
@@ -57,7 +67,7 @@ export class Agent {
       // 否则后续请求 400(OpenRouter 网关的 reasoning 字段是它的别名)
       if (reasoning) assistantMsg.reasoning_content = reasoning;
 
-      this.messages.push(assistantMsg);
+      this.push(assistantMsg);
 
       if (toolCalls.length === 0) return content;
 
@@ -86,7 +96,7 @@ export class Agent {
           const shown = lines.slice(0, 8).join("\n");
           const more = lines.length > 8 ? `\n  ${italicGray(`…(${lines.length} lines)`)}` : "";
           console.error(gray(shown) + more);
-          this.messages.push({ role: "tool", tool_call_id: tc.id, content: result.output });
+          this.push({ role: "tool", tool_call_id: tc.id, content: result.output });
         }),
       );
     }

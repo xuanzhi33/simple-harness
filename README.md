@@ -10,6 +10,7 @@
 - 终端着色:命令成败绿/红,思考灰字,🤔 / 💻 标签
 - Skills 支持:自动加载 `.agents/skills` 注入 system prompt
 - AGENTS.md 支持:项目根指令文件常驻注入
+- 会话持久化:历史实时写入 `session.jsonl`,重启自动恢复
 - 启动时显示加载的 skills 数量与 AGENTS.md 状态
 
 ## 环境要求
@@ -37,7 +38,7 @@ pnpm dev "任务描述"    # 单次执行
 | 命令 | 说明 |
 |---|---|
 | `/exit` `/quit` | 退出 |
-| `/clear` | 清空对话历史(保留 system) |
+| `/clear` | 清空对话历史(保留 system)并删除 `session.jsonl` |
 
 ## Skills
 
@@ -63,6 +64,21 @@ description: Create a pull request with git, including branch, commit, and push 
 ```
 
 规则:目录含 `SKILL.md` 即技能根(不再递归);`description` 必填(缺失则忽略);`name` 缺省用目录名。加载后模型按需用 `cat` 读取技能文件执行。
+
+## 会话持久化
+
+历史对话实时保存到当前工作目录的 `session.jsonl`(每行一条消息,不含 system),下次启动自动恢复:
+
+- 每次消息更新(用户输入 / 助手回复 / 工具结果)后立即覆盖写,重启不丢上下文
+- `system` 不持久化:每次启动根据 skills / AGENTS.md 动态重建
+- `/clear` 会同时清空内存历史与 `session.jsonl`
+- 加载时跳过损坏行,半写/崩溃最多丢最后一条,不影响已有历史
+
+启动时终端显示恢复状态:
+
+```
+💾 3 messages restored      # 或 session: empty
+```
 
 ## AGENTS.md
 
