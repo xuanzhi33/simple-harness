@@ -1,6 +1,6 @@
 import type { Config } from "./config.ts";
 import type { ChatMessage, Tool, ToolCall, ToolResult } from "./types.ts";
-import { gray, green, italicGray, red, tagSkyBlue, tagYellow } from "./color.ts";
+import { gray, green, italicGray, red, tagGreen, tagRed, tagSkyBlue } from "./color.ts";
 
 const FETCH_TIMEOUT_MS = 60_000;
 
@@ -75,15 +75,16 @@ export class Agent {
           } catch (e) {
             result = { output: `Error: ${(e as Error).message}`, code: 1 };
           }
-          // 命令按成败染绿/红(执行后打印,故可知退出码)
+          // 命令按成败染绿/红(执行后打印,故可知退出码),标签底色跟随成败
           const failed = result.code !== 0;
           const color = failed ? red : green;
-          console.error(`${tagYellow(" BASH ")} ${color(display)}`);
-          // 输出摘要: 内容保持白色,行数提示斜体灰
+          const tag = failed ? tagRed : tagGreen;
+          console.error(`${tag(" BASH ")} ${color(display)}`);
+          // 输出摘要: 无标签,灰色(与思考一致),行数提示斜体灰
           const lines = result.output.split("\n");
           const shown = lines.slice(0, 8).join("\n");
           const more = lines.length > 8 ? `\n  ${italicGray(`…(${lines.length} lines)`)}` : "";
-          console.error(`${tagYellow(" → ")} ${shown}${more}`);
+          console.error(gray(shown) + more);
           this.messages.push({ role: "tool", tool_call_id: tc.id, content: result.output });
         }),
       );
