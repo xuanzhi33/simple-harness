@@ -159,11 +159,17 @@ async function readStream(
     }
     onStream?.("reasoning", gray(t));
   };
-  // reasoning 结束后立即换行(content/tool_calls 出现时触发,流结束兕底)
+  // reasoning 结束后立即换行(content/tool_calls 出现时触发,流结束兜底)
   const endReasoning = () => {
     if (reasoningStarted && !reasoningEnded) {
       onStream?.("reasoning", "\n");
       reasoningEnded = true;
+    }
+  };
+  // content 流结束后补一个换行,保证末尾换行
+  const endContent = () => {
+    if (contentStarted && !content.endsWith("\n")) {
+      onStream?.("content", "\n");
     }
   };
 
@@ -222,6 +228,7 @@ async function readStream(
     }
   } finally {
     endReasoning();
+    endContent();
   }
 
   const toolCalls: ToolCall[] = [...toolAcc.entries()]

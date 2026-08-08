@@ -46,7 +46,6 @@ async function main(): Promise<void> {
   const promptArg = process.argv[2];
   if (promptArg) {
     await agent.chat(promptArg);
-    process.stdout.write("\n");
     return;
   }
 
@@ -72,7 +71,6 @@ async function main(): Promise<void> {
     } catch (e) {
       console.error(`${tagRed(" ERROR ")} ${(e as Error).message}`);
     }
-    process.stdout.write("\n");
   }
   rl.close();
 }
