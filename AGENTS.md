@@ -13,3 +13,4 @@ simple-harness:极简 TypeScript coding agent(单 bash 工具,OpenRouter,零 npm
 - 始终保持极简:不引入 npm 依赖,不添加多余抽象,新增代码优先复用现有模块
 - 改动用户可见行为(输出、配置、文档)时,同步更新 README.md
 - 配置只保留 `OPENROUTER_API_KEY` 与 `MODEL`(.env),其他一律写死
+- 进行有副作用的操作(如写入文件、修改代码、提交 git、推送)前,必须明确征得用户同意
