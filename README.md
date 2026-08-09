@@ -11,7 +11,7 @@
 - Skills 支持:自动加载 `.agents/skills` 注入 system prompt
 - AGENTS.md 支持:项目根指令文件常驻注入
 - 会话持久化:历史实时写入 `session.jsonl`,重启自动恢复
-- 启动时显示加载的 skills 数量与 AGENTS.md 状态
+- 启动时显示模型名称、加载的 skills 数量与 AGENTS.md 状态
 
 ## 环境要求
 
@@ -74,10 +74,12 @@ description: Create a pull request with git, including branch, commit, and push 
 - `/clear` 会同时清空内存历史与 `session.jsonl`
 - 加载时跳过损坏行,半写/崩溃最多丢最后一条,不影响已有历史
 
-启动时终端显示恢复状态:
+启动时终端依次显示模型名称、skills / AGENTS.md 状态与恢复状态:
 
 ```
-💾 3 messages restored      # 或 session: empty
+🤖 deepseek/deepseek-v4-flash-0731   # 来自 .env 的 MODEL,缺省用默认值
+📦 2 loaded
+💾 3 messages restored               # 或 session: empty
 ```
 
 ## AGENTS.md
@@ -93,8 +95,8 @@ AGENTS.md   # 项目约定:构建命令、代码风格、注意事项
 启动时终端会显示加载状态:
 
 ```
-skills: 2 loaded
-AGENTS.md: loaded (/path/to/AGENTS.md)   # 或 not found
+📦 2 loaded
+📄 /path/to/AGENTS.md                    # 未找到时不显示
 ```
 
 ## 工作原理

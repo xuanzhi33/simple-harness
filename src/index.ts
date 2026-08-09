@@ -33,6 +33,7 @@ async function main(): Promise<void> {
   loadDotEnv();
   const config = resolveConfig();
   const cwd = process.cwd();
+  console.log(`${tagSkyBlue(" \u{1F916} ")} ${green(config.model)}`);
 
   // 加载 skills 与 AGENTS.md,拼入 system prompt
   const skills = loadSkills(join(cwd, ".agents", "skills"));
