@@ -2,7 +2,7 @@
 // 接受"部分只读命令漏报"(显示为普通色),但杜绝"有副作用命令误报只读"(变灰)。
 // 因此名单只放绝对纯读命令;写能力命令(tee/env/xargs)、git 写子命令一律不入。
 const READONLY_COMMANDS = new Set([
-  "cat","ls","grep","head","tail","find","wc","pwd","date","which","echo","awk","sort","uniq",
+  "cat","ls","grep","head","tail","find","wc","cd","pwd","date","which","echo","awk","sort","uniq",
   "diff","jq","tree","ps","df","free","id","whoami","stat","file","readlink","realpath","du",
   "seq","nl","tac","comm","column","fold","tr","less","more","pgrep","lsof","ss","read","test",
   "[","true","false","basename","dirname","hostname","uname","groups","type",

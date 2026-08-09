@@ -10,7 +10,6 @@ import { formatAgentsMdPrompt, loadAgentsMd } from "./context.ts";
 import { clearSession, loadSession, saveSession } from "./session.ts";
 import { gray, green, red, tagRed, tagSkyBlue } from "./color.ts";
 import { MarkdownRenderer } from "./markdown.ts";
-import { isReadonly } from "./readonly.ts";
 import type { Tool } from "./types.ts";
 
 const bashToolDef: Tool = {
@@ -28,17 +27,7 @@ const bashToolDef: Tool = {
     required: ["command"],
     additionalProperties: false,
   },
-  execute: async (args) => {
-    const { command } = args as unknown as BashArgs;
-    if (!isReadonly(command)) {
-      // 审批: 按 Enter 继续,Ctrl-C 中断(不保留 y/n 逻辑)
-      console.error(`${tagSkyBlue(" \u{1F6E1} ")} ${gray("non-readonly \u2014 press Enter to run, Ctrl-C to abort")}`);
-      const rl = createInterface({ input: stdin, output: stdout });
-      await rl.question("");
-      rl.close();
-    }
-    return bashTool(args as unknown as BashArgs);
-  },
+  execute: (args) => bashTool(args as unknown as BashArgs),
 };
 
 async function main(): Promise<void> {
