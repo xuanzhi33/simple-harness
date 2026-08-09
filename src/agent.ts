@@ -1,6 +1,7 @@
 import type { Config } from "./config.ts";
 import type { ChatMessage, Tool, ToolCall, ToolResult, Usage } from "./types.ts";
 import { gray, green, italicGray, red, tagGreen, tagRed, tagSkyBlue } from "./color.ts";
+import { isReadonly } from "./readonly.ts";
 
 const FETCH_TIMEOUT_MS = 60_000;
 const MAX_ITERATIONS = 20; // 写死: 单轮对话的工具调用上限
@@ -203,11 +204,14 @@ export class Agent {
           } catch (e) {
             result = { output: `Error: ${(e as Error).message}`, code: 1 };
           }
-          // 命令按成败染绿/红(执行后打印,故可知退出码),标签底色跟随成败
+          // 命令按成败染绿/红(执行后打印,故可知退出码),标签底色跟随成败;
+          // 只读命令(无副作用)整行灰色淡化,标签带 📖
           const failed = result.code !== 0;
-          const color = failed ? red : green;
-          const tag = failed ? tagRed : tagGreen;
-          console.error(`${tag(" 💻 ")} ${color(display)}`);
+          const ro = !failed && isReadonly(display);
+          const color = failed ? red : ro ? gray : green;
+          const tag = failed ? tagRed : ro ? tagSkyBlue : tagGreen; // 底色: 红/蓝(只读)/绿
+          const icon = ro ? " 📖 " : " 💻 ";
+          console.error(`${tag(icon)} ${color(display)}`);
           // 输出摘要: 无标签,灰色(与思考一致),行数提示斜体灰
           const lines = result.output.split("\n");
           const shown = lines.slice(0, 8).join("\n");
