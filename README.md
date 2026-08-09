@@ -41,9 +41,9 @@ pnpm dev "任务描述"    # 单次执行
 |---|---|
 | `/exit` `/quit` | 退出 |
 | `/clear` | 清空对话历史(保留 system)并删除 `session.jsonl` |
-| `/compact` | 手动压缩上下文:将历史总结为结构化摘要,替换旧历史(保留最近一轮完整对话) |
+| `/compact` | 手动压缩上下文:将历史总结为结构化摘要,替换全部旧对话 |
 
-`/compact` 参考 [pi](https://github.com/earendil-dev/pi) 的 compaction 方案:调用模型(非流式、不带工具)生成 `Goal / Constraints / Progress / Key Decisions / Next Steps / Critical Context` 结构化的上下文检查点,并保留最后一条 user 消息及其后续的完整回合,避免悬空的 tool 消息。压缩后立即持久化到 `session.jsonl`,重启后仍生效:
+`/compact` 参考 [pi](https://github.com/earendil-dev/pi) 的 compaction 方案:调用模型(非流式、不带工具)生成 `Goal / Constraints / Progress / Key Decisions / Next Steps / Critical Context` 结构化的上下文检查点,替换全部旧对话(旧记录同步从 `session.jsonl` 移除)。压缩后立即持久化,重启后仍生效:
 
 ```
 ✅ compacted: ~12.3k → ~0.4k tokens

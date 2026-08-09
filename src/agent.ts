@@ -88,7 +88,8 @@ export class Agent {
   }
 
   // 手动上下文压缩: 将历史(不含 system)总结为一条 context summary,
-  // 保留最近一轮完整对话,其余历史替换为总结。返回 summary 文本。
+  // 替换全部旧对话(不保留任何原始消息),session.jsonl 同步清空旧记录。
+  // 返回 summary 文本。
   async compact(): Promise<string> {
     const system = this.messages[0];
     const history = this.messages.slice(1);
@@ -97,21 +98,12 @@ export class Agent {
     const tokensBefore = history.reduce((n, m) => n + estimateTokens(m), 0);
     const summary = await this.summarize(history);
 
-    // 保留最后一条 user 消息及其之后的所有消息(完整回合,避免悬空 tool 消息)
-    let tailStart = history.length;
-    for (let i = history.length - 1; i >= 0; i--) {
-      if (history[i].role === "user") {
-        tailStart = i;
-        break;
-      }
-    }
-    const tail = history.slice(tailStart);
     // messages 为 readonly 引用,用 splice 原地重建(不允许重新赋值)
+    // 只保留 system + summary,旧对话全部移除,持久化后文件即精简后的历史
     this.messages.splice(
       1,
       this.messages.length - 1,
       { role: "user", content: `[Context summary of earlier conversation - the compacted history is replaced by this summary. Continue the work based on it.]\n\n${summary}` },
-      ...tail,
     );
     this.onPersist?.(this.messages);
 
