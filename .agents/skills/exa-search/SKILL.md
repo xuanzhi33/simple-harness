@@ -25,7 +25,7 @@ Run the script directly from this directory (or any cwd, using its path):
 **Examples:**
 ```bash
 # Basic search (default 10 results)
-.agents/skills/exa-search/exa.ts search "latest AI research papers"
+.agents/skills/exa-search/exa.ts search "latest AI research papers 2026"
 
 # Limit result count
 .agents/skills/exa-search/exa.ts search "machine learning" 5
@@ -79,10 +79,11 @@ The output includes:
 
 ## Helpful Tips
 
-1. **Be specific**: More detailed queries yield better results
-2. **Control volume**: Use `numResults` to manage output size (default: 10)
-3. **Combine commands**: Chain searches with shell pipelines
-4. **No rate limits**: Free tier works for basic research needs
+1. **Append the current year (2026) when searching for the latest content**: For queries about recent news, releases, papers, or trends, add `2026` to the query so results reflect the newest information (e.g. `"latest Python release 2026"`).
+2. **Be specific**: More detailed queries yield better results
+3. **Control volume**: Use `numResults` to manage output size (default: 10)
+4. **Combine commands**: Chain searches with shell pipelines
+5. **No rate limits**: Free tier works for basic research needs
 
 ## Quick Reference Card
 
