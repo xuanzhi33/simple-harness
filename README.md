@@ -12,7 +12,7 @@
 - AGENTS.md 支持:项目根指令文件常驻注入
 - 会话持久化:历史实时写入 `session.jsonl`,重启自动恢复
 - 启动时显示模型名称、加载的 skills 数量与 AGENTS.md 状态
-- 每轮 API 调用后显示 usage:输入/输出 token、缓存命中率与费用(如有)
+- 最终回答末尾显示 usage:输入/输出 token、缓存命中率(三位小数)与费用(如有)
 - 手动上下文压缩:`/compact` 将历史总结为结构化摘要,释放上下文窗口
 
 ## 环境要求
@@ -93,14 +93,14 @@ description: Create a pull request with git, including branch, commit, and push 
 
 ## Token 用量
 
-OpenRouter 流式响应在 `[DONE]` 前返回 usage chunk,每次 API 调用结束后终端显示一行用量统计(缺失字段自动省略):
+OpenRouter 流式响应在 `[DONE]` 前返回 usage chunk,用量统计在**最终回答末尾**一次性显示(一轮对话中多次 API 调用如工具循环会累计合并;中途不输出),缺失字段自动省略:
 
 ```
-📊 ↑ 1523 · ↓ 456 · cache 40% · $0.00015
+📊 ↑ 1523 · ↓ 456 · cache 40.000% · $0.00015
 ```
 
 - `↑` 输入 token;`↓` 输出 token
-- `cache %`:提示缓存命中率(`prompt_tokens_details.cached_tokens`)
+- `cache %`:提示缓存命中率(`prompt_tokens_details.cached_tokens`),保留三位小数
 - `$` 费用:OpenRouter 的 `usage.cost`,接口未返回则不显示
 
 ## AGENTS.md

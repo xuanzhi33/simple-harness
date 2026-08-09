@@ -168,9 +168,10 @@ export class Agent {
   async chat(userText: string): Promise<string> {
     this.push({ role: "user", content: userText });
 
+    const totalUsage: Usage = {};
     for (let i = 0; i < MAX_ITERATIONS; i++) {
       const { content, reasoning, toolCalls, usage } = await this.streamComplete();
-      if (usage) displayUsage(usage);
+      if (usage) accumulateUsage(totalUsage, usage);
 
       // 无工具调用时不设置 tool_calls 字段: DeepSeek 后端拒绝空数组
       // ("Expected an array with minimum length 1")
@@ -182,7 +183,10 @@ export class Agent {
 
       this.push(assistantMsg);
 
-      if (toolCalls.length === 0) return content;
+      if (toolCalls.length === 0) {
+        if (Object.keys(totalUsage).length > 0) displayUsage(totalUsage);
+        return content;
+      }
 
       await Promise.all(
         toolCalls.map(async (tc) => {
@@ -213,6 +217,7 @@ export class Agent {
         }),
       );
     }
+    if (Object.keys(totalUsage).length > 0) displayUsage(totalUsage);
     return `Reached max iterations (${MAX_ITERATIONS}) without a final answer.`;
   }
 
@@ -367,14 +372,26 @@ async function readStream(
   return { content, reasoning, toolCalls, usage };
 }
 
-// 每轮 API 调用结束后显示 usage: ↑输入 ↓输出 · 缓存率 · 价格(缺失字段不显示)
+// 累计多次 API 调用的 usage(缺失字段保持 undefined,避免被 0 污染显示)
+function accumulateUsage(total: Usage, u: Usage): void {
+  if (typeof u.prompt_tokens === "number") total.prompt_tokens = (total.prompt_tokens ?? 0) + u.prompt_tokens;
+  if (typeof u.completion_tokens === "number") total.completion_tokens = (total.completion_tokens ?? 0) + u.completion_tokens;
+  if (typeof u.cost === "number") total.cost = (total.cost ?? 0) + u.cost;
+  const cached = u.prompt_tokens_details?.cached_tokens;
+  if (typeof cached === "number") {
+    total.prompt_tokens_details ??= {};
+    total.prompt_tokens_details.cached_tokens = (total.prompt_tokens_details.cached_tokens ?? 0) + cached;
+  }
+}
+
+// 仅在最终回答末尾显示 usage: ↑输入 ↓输出 · 缓存率(三位小数) · 价格(缺失字段不显示)
 function displayUsage(u: Usage): void {
   const parts: string[] = [];
   if (typeof u.prompt_tokens === "number") parts.push(`↑${u.prompt_tokens}`);
   if (typeof u.completion_tokens === "number") parts.push(`↓${u.completion_tokens}`);
   const cached = u.prompt_tokens_details?.cached_tokens;
   if (typeof cached === "number" && cached > 0 && typeof u.prompt_tokens === "number" && u.prompt_tokens > 0) {
-    parts.push(`cache ${Math.round((cached / u.prompt_tokens) * 100)}%`);
+    parts.push(`cache ${((cached / u.prompt_tokens) * 100).toFixed(3)}%`);
   }
   if (typeof u.cost === "number") {
     const cost = u.cost.toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
