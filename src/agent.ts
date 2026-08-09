@@ -30,8 +30,11 @@ Use this EXACT format:
 ## Key Decisions
 - **[Decision]**: [Brief rationale]
 
+## User Messages
+- [List ALL user messages that are not tool results, verbatim or near-verbatim. These are critical for understanding the user's feedback and changing intent.]
+
 ## Next Steps
-1. [Ordered list of what should happen next]
+1. [Ordered list of what should happen next. If there is a next step, include direct quotes from the most recent conversation showing exactly what task was being worked on and where it left off.]
 
 ## Critical Context
 - [Any data, examples, or references needed to continue]
