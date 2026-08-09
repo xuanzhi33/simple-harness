@@ -5,6 +5,40 @@ import { gray, green, italicGray, red, tagGreen, tagRed, tagSkyBlue } from "./co
 const FETCH_TIMEOUT_MS = 60_000;
 const MAX_ITERATIONS = 20; // 写死: 单轮对话的工具调用上限
 
+// 上下文压缩提示词(参考 pi 的 compaction 实现:结构化总结,便于后续 LLM 续作)
+const SUMMARIZATION_PROMPT = `The messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.
+
+Use this EXACT format:
+
+## Goal
+[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]
+
+## Constraints & Preferences
+- [Any constraints, preferences, or requirements mentioned by user]
+- [Or "(none)" if none were mentioned]
+
+## Progress
+### Done
+- [x] [Completed tasks/changes]
+
+### In Progress
+- [ ] [Current work]
+
+### Blocked
+- [Issues preventing progress, if any]
+
+## Key Decisions
+- **[Decision]**: [Brief rationale]
+
+## Next Steps
+1. [Ordered list of what should happen next]
+
+## Critical Context
+- [Any data, examples, or references needed to continue]
+- [Or "(none)" if not applicable]
+
+Keep each section concise. Preserve exact file paths, function names, and error messages.`;
+
 export interface AgentOptions {
   config: Config;
   systemPrompt: string;
@@ -51,6 +85,88 @@ export class Agent {
   private push(msg: ChatMessage): void {
     this.messages.push(msg);
     this.onPersist?.(this.messages);
+  }
+
+  // 手动上下文压缩: 将历史(不含 system)总结为一条 context summary,
+  // 保留最近一轮完整对话,其余历史替换为总结。返回 summary 文本。
+  async compact(): Promise<string> {
+    const system = this.messages[0];
+    const history = this.messages.slice(1);
+    if (history.length === 0) throw new Error("No history to compact");
+
+    const tokensBefore = history.reduce((n, m) => n + estimateTokens(m), 0);
+    const summary = await this.summarize(history);
+
+    // 保留最后一条 user 消息及其之后的所有消息(完整回合,避免悬空 tool 消息)
+    let tailStart = history.length;
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (history[i].role === "user") {
+        tailStart = i;
+        break;
+      }
+    }
+    const tail = history.slice(tailStart);
+    // messages 为 readonly 引用,用 splice 原地重建(不允许重新赋值)
+    this.messages.splice(
+      1,
+      this.messages.length - 1,
+      { role: "user", content: `[Context summary of earlier conversation - the compacted history is replaced by this summary. Continue the work based on it.]\n\n${summary}` },
+      ...tail,
+    );
+    this.onPersist?.(this.messages);
+
+    const tokensAfter = this.messages.slice(1).reduce((n, m) => n + estimateTokens(m), 0);
+    console.error(`${tagGreen(" \u2705 ")} ${green(`compacted: ~${tokensBefore} → ~${tokensAfter} tokens`)}`);
+    return summary;
+  }
+
+  // 独立的总结请求: 非流式、不带 tools,防止模型继续对话或调用工具
+  private async summarize(history: ChatMessage[]): Promise<string> {
+    const conversationText = history
+      .map((m) => `${m.role === "tool" ? "tool result" : m.role}: ${m.content ?? ""}`)
+      .join("\n\n");
+    const prompt = `<conversation>\n${conversationText}\n</conversation>\n\n${SUMMARIZATION_PROMPT}`;
+
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(`${this.config.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.config.apiKey}`,
+          ...this.config.headers,
+        },
+        body: JSON.stringify({
+          model: this.config.model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0,
+          stream: false,
+        }),
+        signal: ac.signal,
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        let detail = `HTTP ${res.status}`;
+        try {
+          const j = JSON.parse(text) as { error?: { message?: string } };
+          if (j?.error?.message) detail += `: ${j.error.message}`;
+        } catch {
+          // body 非 JSON,忽略
+        }
+        throw new Error(detail);
+      }
+      const j = (await res.json()) as {
+        choices?: { message?: { content?: string | null } }[];
+        usage?: Usage;
+      };
+      if (j.usage) displayUsage(j.usage); // 总结请求同样计入费用,顺带显示
+      const content = j.choices?.[0]?.message?.content?.trim();
+      if (!content) throw new Error("Empty summary response");
+      return content;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   // 一轮完整对话(含工具循环);历史在 messages 中累积,REPL 多轮复用
@@ -271,4 +387,12 @@ function displayUsage(u: Usage): void {
   }
   if (parts.length === 0) return;
   console.error(`${tagSkyBlue(" 📊 ")} ${gray(parts.join(" · "))}`);
+}
+
+// 粗略 token 估算(chars/4),仅用于 compact 前后对比显示
+function estimateTokens(m: ChatMessage): number {
+  const content = m.content ?? "";
+  const toolArgs =
+    m.tool_calls?.reduce((n, tc) => n + tc.function.name.length + (tc.function.arguments?.length ?? 0), 0) ?? 0;
+  return Math.ceil((content.length + toolArgs) / 4);
 }

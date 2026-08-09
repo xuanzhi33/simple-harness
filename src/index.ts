@@ -72,7 +72,7 @@ async function main(): Promise<void> {
 
   // 交互 REPL
   const rl = createInterface({ input: stdin, output: stdout });
-  console.log(`${green("simple-harness")} — /exit quit, /clear clear history`);
+  console.log(`${green("simple-harness")} — /exit quit, /clear clear history, /compact summarize history`);
   for (;;) {
     let input: string;
     try {
@@ -86,6 +86,14 @@ async function main(): Promise<void> {
       agent.messages.length = 1; // 保留 system
       clearSession(sessionPath); // 同步清空持久化,防止下次启动旧历史复活
       console.log(gray("[history cleared]"));
+      continue;
+    }
+    if (input === "/compact") {
+      try {
+        await agent.compact();
+      } catch (e) {
+        console.error(`${tagRed(" ERROR ")} ${(e as Error).message}`);
+      }
       continue;
     }
     try {

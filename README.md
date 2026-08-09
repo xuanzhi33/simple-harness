@@ -13,6 +13,7 @@
 - 会话持久化:历史实时写入 `session.jsonl`,重启自动恢复
 - 启动时显示模型名称、加载的 skills 数量与 AGENTS.md 状态
 - 每轮 API 调用后显示 usage:输入/输出 token、缓存命中率与费用(如有)
+- 手动上下文压缩:`/compact` 将历史总结为结构化摘要,释放上下文窗口
 
 ## 环境要求
 
@@ -40,6 +41,13 @@ pnpm dev "任务描述"    # 单次执行
 |---|---|
 | `/exit` `/quit` | 退出 |
 | `/clear` | 清空对话历史(保留 system)并删除 `session.jsonl` |
+| `/compact` | 手动压缩上下文:将历史总结为结构化摘要,替换旧历史(保留最近一轮完整对话) |
+
+`/compact` 参考 [pi](https://github.com/earendil-dev/pi) 的 compaction 方案:调用模型(非流式、不带工具)生成 `Goal / Constraints / Progress / Key Decisions / Next Steps / Critical Context` 结构化的上下文检查点,并保留最后一条 user 消息及其后续的完整回合,避免悬空的 tool 消息。压缩后立即持久化到 `session.jsonl`,重启后仍生效:
+
+```
+✅ compacted: ~12.3k → ~0.4k tokens
+```
 
 ## Skills
 
