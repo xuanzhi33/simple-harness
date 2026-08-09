@@ -9,6 +9,7 @@ import { formatSkillsForPrompt, loadSkills } from "./skills.ts";
 import { formatAgentsMdPrompt, loadAgentsMd } from "./context.ts";
 import { clearSession, loadSession, saveSession } from "./session.ts";
 import { gray, green, red, tagRed, tagSkyBlue } from "./color.ts";
+import { MarkdownRenderer } from "./markdown.ts";
 import type { Tool } from "./types.ts";
 
 const bashToolDef: Tool = {
@@ -45,12 +46,17 @@ async function main(): Promise<void> {
 
   // 会话持久化: <cwd>/session.jsonl,每次消息更新后保存,启动时重新加载
   const sessionPath = join(cwd, "session.jsonl");
+  // 行缓冲 Markdown 渲染: 流式 chunk 攒成完整行才着色,chat 结束后 flush
+  const markdown = new MarkdownRenderer();
   const agent = new Agent(
     {
       config,
       systemPrompt,
-      // reasoning 文本自带 "\n[reasoning] " 前缀与结尾换行,content 直接输出
-      onStream: (_type, text) => process.stdout.write(text),
+      // reasoning 灰色直出(前缀/换行由 agent 处理);content 走 markdown 渲染
+      onStream: (type, text) => {
+        if (type === "content") markdown.write(text);
+        else process.stdout.write(text);
+      },
       onPersist: (messages) => saveSession(sessionPath, messages),
     },
     [bashToolDef],
@@ -66,7 +72,11 @@ async function main(): Promise<void> {
   // 单次模式: 传入 prompt 则跑完退出
   const promptArg = process.argv[2];
   if (promptArg) {
-    await agent.chat(promptArg);
+    try {
+      await agent.chat(promptArg);
+    } finally {
+      markdown.flush(); // 流结束,输出最后一行残留
+    }
     return;
   }
 
@@ -100,6 +110,8 @@ async function main(): Promise<void> {
       await agent.chat(input);
     } catch (e) {
       console.error(`${tagRed(" ERROR ")} ${(e as Error).message}`);
+    } finally {
+      markdown.flush(); // 流结束,输出最后一行残留
     }
   }
   rl.close();

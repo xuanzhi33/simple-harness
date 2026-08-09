@@ -8,6 +8,7 @@
 - 双模式:交互 REPL / 单次执行
 - bash 输出自动截断(2000 行 / 50KB)至临时文件,支持 timeout
 - 终端着色:命令成败绿/红,思考灰字,🤔 / 💻 标签
+- 极简 Markdown 渲染(仅终端显示):标题蓝粗、**加粗**、行内代码黄、围栏代码块整块绿(块内原样不误染)
 - Skills 支持:自动加载 `.agents/skills` 注入 system prompt
 - AGENTS.md 支持:项目根指令文件常驻注入
 - 会话持久化:历史实时写入 `session.jsonl`,重启自动恢复
@@ -139,7 +140,8 @@ src/
 ├── config.ts   # .env 解析 + OpenRouter 配置
 ├── types.ts    # OpenAI Chat Completions 格式类型
 ├── system.ts   # system prompt 构建
-└── color.ts    # 终端 ANSI 着色(零依赖)
+├── color.ts    # 终端 ANSI 着色(零依赖)
+└── markdown.ts # 极简 Markdown 渲染(标题/加粗/行内代码/代码块,仅显示)
 ```
 
-共约 670 行 TypeScript。
+共约 740 行 TypeScript。
