@@ -15,7 +15,9 @@ const GIT_READONLY_SUB = new Set([
 ]);
 
 export function isReadonly(command: string): boolean {
-  if (/>/.test(command)) return false; // 输出重定向 = 写(引号内 > 误伤可接受)
+  // 丢弃到 /dev/null(2>/dev/null、>/dev/null、&>/dev/null)或 fd(2>&1)的重定向无副作用,先抹掉
+  const stripped = command.replace(/\d*&?>+\s*\/dev\/null|\d*>&\d+/g, "");
+  if (/>/.test(stripped)) return false; // 剩余的输出重定向 = 写(引号内 > 误伤可接受)
   if (/-i\b|--in-place/.test(command)) return false; // sed -i 原地写
   const [cmd, sub] = command.trim().split(/\s+/);
   if (cmd === "sed") return true; // 带 -i 的已在上面返回 false,到这里的 sed 无原地写
