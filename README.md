@@ -9,7 +9,7 @@
 - bash 输出自动截断(2000 行 / 50KB)至临时文件,支持 timeout
 - 终端着色:命令成败绿/红,思考灰字,🤔 / 💻 标签
 - 极简 Markdown 渲染(仅终端显示):标题蓝粗、**加粗**、行内代码黄、围栏代码块整块绿(块内原样不误染)
-- 只读命令识别:无副作用命令灰字淡化 + 📖 标签(可漏报、不误报)
+- 高风险命令识别:git 写操作 / 包管理器安装移除 / 网络请求 / python·node 代码内执行命令 → 黄色 ⚠️ 提示
 - Skills 支持:自动加载 `.agents/skills` 注入 system prompt
 - AGENTS.md 支持:项目根指令文件常驻注入
 - 会话持久化:历史实时写入 `session.jsonl`,重启自动恢复
@@ -143,7 +143,7 @@ src/
 ├── system.ts   # system prompt 构建
 ├── color.ts    # 终端 ANSI 着色(零依赖)
 ├── markdown.ts # 极简 Markdown 渲染(标题/加粗/行内代码/代码块,仅显示)
-└── readonly.ts # bash 命令只读判断(只读灰显 + 非只读审批)
+└── risk.ts     # bash 命令高风险判断(git 写 / 装依赖 / 网络 / 代码内执行)
 ```
 
-共约 790 行 TypeScript。
+共约 800 行 TypeScript。

@@ -15,6 +15,7 @@ export const bold = wrap("1"); // 加粗
 // 标签: 背景色 + 黑/白字,用法: tagSkyBlue(" REASONING ")
 export const tagSkyBlue = wrap("104;30");
 export const tagGreen = wrap("42;30"); // bash 成功
+export const tagYellow = wrap("43;30"); // 高风险命令
 // bash 失败 / 错误
 const tagRed = wrap("41;37");
 export { tagRed };
