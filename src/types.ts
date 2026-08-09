@@ -26,6 +26,15 @@ export interface Tool {
   execute(args: Record<string, unknown>): Promise<ToolResult>;
 }
 
+// OpenRouter 流式响应末尾的 usage chunk(字段可选,缺失即不显示)
+export interface Usage {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  prompt_tokens_details?: { cached_tokens?: number };
+  cost?: number; // OpenRouter 特有:美元计价,缺失则不显示
+}
+
 // API 响应(仅用到字段)
 export interface ChatCompletionResponse {
   choices?: {

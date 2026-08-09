@@ -1,5 +1,5 @@
 import type { Config } from "./config.ts";
-import type { ChatMessage, Tool, ToolCall, ToolResult } from "./types.ts";
+import type { ChatMessage, Tool, ToolCall, ToolResult, Usage } from "./types.ts";
 import { gray, green, italicGray, red, tagGreen, tagRed, tagSkyBlue } from "./color.ts";
 
 const FETCH_TIMEOUT_MS = 60_000;
@@ -19,6 +19,7 @@ interface StreamResult {
   content: string;
   reasoning?: string;
   toolCalls: ToolCall[];
+  usage?: Usage; // OpenRouter 流式响应末尾 usage chunk(可能缺失)
 }
 
 interface ToolCallAcc {
@@ -57,7 +58,8 @@ export class Agent {
     this.push({ role: "user", content: userText });
 
     for (let i = 0; i < MAX_ITERATIONS; i++) {
-      const { content, reasoning, toolCalls } = await this.streamComplete();
+      const { content, reasoning, toolCalls, usage } = await this.streamComplete();
+      if (usage) displayUsage(usage);
 
       // 无工具调用时不设置 tool_calls 字段: DeepSeek 后端拒绝空数组
       // ("Expected an array with minimum length 1")
@@ -161,6 +163,7 @@ async function readStream(
   let reasoningStarted = false;
   let reasoningEnded = false;
   const toolAcc = new Map<number, ToolCallAcc>();
+  let usage: Usage | undefined; // 流式末尾 usage chunk(OpenRouter 在 [DONE] 前发送)
 
   const emitReasoning = (t: string) => {
     if (!reasoningStarted) {
@@ -195,12 +198,13 @@ async function readStream(
         if (!line.startsWith("data:")) continue;
         const data = line.slice(5).trim();
         if (data === "[DONE]") break outer;
-        let chunk: { choices?: { delta?: Record<string, unknown> }[] } | undefined;
+        let chunk: { choices?: { delta?: Record<string, unknown> }[]; usage?: Usage } | undefined;
         try {
-          chunk = JSON.parse(data) as { choices?: { delta?: Record<string, unknown> }[] };
+          chunk = JSON.parse(data) as { choices?: { delta?: Record<string, unknown> }[]; usage?: Usage };
         } catch {
           continue; // 忽略非 JSON 行
         }
+        if (chunk?.usage) usage = chunk.usage; // usage chunk 的 choices 为空数组,delta 为 undefined
         const delta = chunk?.choices?.[0]?.delta;
         if (!delta) continue;
         const r = (delta.reasoning ?? delta.reasoning_content) as string | undefined;
@@ -249,5 +253,22 @@ async function readStream(
       function: { name: v.name ?? "", arguments: v.args ?? "{}" },
     }));
 
-  return { content, reasoning, toolCalls };
+  return { content, reasoning, toolCalls, usage };
+}
+
+// 每轮 API 调用结束后显示 usage: ↑输入 ↓输出 · 缓存率 · 价格(缺失字段不显示)
+function displayUsage(u: Usage): void {
+  const parts: string[] = [];
+  if (typeof u.prompt_tokens === "number") parts.push(`↑${u.prompt_tokens}`);
+  if (typeof u.completion_tokens === "number") parts.push(`↓${u.completion_tokens}`);
+  const cached = u.prompt_tokens_details?.cached_tokens;
+  if (typeof cached === "number" && cached > 0 && typeof u.prompt_tokens === "number" && u.prompt_tokens > 0) {
+    parts.push(`cache ${Math.round((cached / u.prompt_tokens) * 100)}%`);
+  }
+  if (typeof u.cost === "number") {
+    const cost = u.cost.toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
+    parts.push(`$${cost}`);
+  }
+  if (parts.length === 0) return;
+  console.error(`${tagSkyBlue(" 📊 ")} ${gray(parts.join(" · "))}`);
 }
